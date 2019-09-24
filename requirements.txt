@@ -4,4 +4,4 @@ websocket
 websocket-client
 python-intercom
 flask
-htmlm2text
+html2text
