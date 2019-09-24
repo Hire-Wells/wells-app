@@ -1,0 +1,79 @@
+{
+  "type": "notification_event",
+  "app_id": "szdcciir",
+  "data": {
+    "type": "notification_event_data",
+    "item": {
+      "type": "conversation",
+      "id": "23797056900",
+      "created_at": 1569275195,
+      "updated_at": 1569286746,
+      "user": {
+        "type": "user",
+        "id": "5d893d3a142aa669c2a17324",
+        "user_id": None,
+        "name": "Carlos Saucedo",
+        "email": "carlos.cgsphoto@gmail.com",
+        "do_not_track": None
+      },
+      "assignee": {
+        "type": "admin",
+        "id": "3472170",
+        "name": "Carlos Saucedo",
+        "email": "carlos.cgsphoto@gmail.com"
+      },
+      "conversation_message": {
+        "type": "conversation_message",
+        "id": "419420916",
+        "url": None,
+        "subject": "",
+        "body": "<p>wassap</p>",
+        "author": { "type": "user", "id": "5d893d3a142aa669c2a17324" },
+        "attachments": []
+      },
+      "conversation_parts": {
+        "type": "conversation_part.list",
+        "conversation_parts": [
+          {
+            "type": "conversation_part",
+            "id": "3799477108",
+            "part_type": "comment",
+            "body": "<p>only sometimes</p>",
+            "created_at": 1569286746,
+            "updated_at": 1569286746,
+            "notified_at": 1569286746,
+            "assigned_to": None,
+            "author": {
+              "type": "admin",
+              "id": "3472170",
+              "name": "Carlos Saucedo"
+            },
+            "attachments": [],
+            "external_id": None
+          }
+        ],
+        "total_count": 1
+      },
+      "conversation_rating": {},
+      "open": True,
+      "state": "open",
+      "snoozed_until": None,
+      "read": False,
+      "metadata": {},
+      "tags": { "type": "tag.list", "tags": [] },
+      "tags_added": { "type": "tag.list", "tags": [] },
+      "links": {
+        "conversation_web": "https://app.intercom.io/a/apps/szdcciir/conversations/23797056900"
+      }
+    }
+  },
+  "links": {},
+  "id": "notif_ecf81b2a-78c8-4d38-8467-e116b413e57c",
+  "topic": "conversation.admin.replied",
+  "delivery_status": "pending",
+  "delivery_attempts": 1,
+  "delivered_at": 0,
+  "first_sent_at": 1569286747,
+  "created_at": 1569286747,
+  "self": None
+}

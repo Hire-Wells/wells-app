@@ -1,0 +1,8 @@
+slackclient>=2.0.0
+certifi
+slackeventsapai
+websocket
+websocket-client
+python-intercom
+flask
+htmlm2text
