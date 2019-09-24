@@ -1,5 +1,5 @@
 wheel
-slackclient>=2.0.0
+slackclient==2.0.0
 certifi
 websocket
 websocket-client
