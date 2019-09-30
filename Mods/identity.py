@@ -7,16 +7,9 @@ import requests
 import os
 import json
 
-# Auth Tokens
-with open("config.json", "r") as h:
-    config = json.load(h)
-
-token = config["slack"]["BOT_TOKEN"]
-
-
 # TODO: Catch errors.
 # Fetches the entire User data JSON.
-def getUser(userId):
+def getUser(userId, token):
     """Fetches information about the user.
 
     Arguments:
@@ -30,7 +23,7 @@ def getUser(userId):
     return(data["user"]["profile"])
 
 
-def getRealName(userId):
+def getRealName(userId, token):
     """Fetches a user's real name.
 
     Arguments:
@@ -39,7 +32,7 @@ def getRealName(userId):
     return(getUser(userId)["real_name"])
 
 
-def getEmail(userId):
+def getEmail(userId, token):
     """Fetches a user's email.
 
     Arguments:
