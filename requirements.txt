@@ -6,3 +6,4 @@ websocket-client
 python-intercom
 flask
 html2text
+slackeventsapi
