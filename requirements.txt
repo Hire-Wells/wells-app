@@ -1,5 +1,5 @@
 wheel
-slackclient==2.0.0
+slackclient
 certifi
 websocket
 websocket-client
@@ -7,3 +7,4 @@ python-intercom
 flask
 html2text
 slackeventsapi
+html2markdown

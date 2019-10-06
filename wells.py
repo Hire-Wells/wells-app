@@ -9,9 +9,9 @@ import Mods.identity as identity
 import Mods.intercom as intercom
 import Mods.tokens as tokens
 from slackeventsapi import SlackEventAdapter
-from slackclient import SlackClient
 from flask import Flask, request
 from html2text import html2text
+import slack
 
 # Auth Tokens
 with open("config.json", "r") as h:
@@ -104,6 +104,41 @@ def onMessageReceive():
     # Parses the response text and converts it to non-html.
     responseText = html2text(
         data["data"]["item"]["conversation_parts"]["conversation_parts"][0]["body"])
+
+    # Formatting a message.
+    message = [
+        {
+            "type": "section",
+            "text": {
+                "type": "plain_text",
+                "text": responseText
+            }
+        }
+    ]
+
+    # Adding links per attachment.
+    attachments = data["data"]["item"]["conversation_parts"]["conversation_parts"][0]["attachments"]
+    if(len(attachments) > 0):
+        # If there is at least one attachment.
+
+        filesText = "_Attachments:_"
+        for file in attachments:
+            fileName = file["name"]
+            fileUrl = file["url"]
+            filesText+= "\n" + "*<" + fileUrl + "|" + fileName + ">*"
+
+        # Adding the divider.
+        message.append({
+            "type": "divider"
+        })
+        message.append({
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": filesText
+            }
+        })
+
     email = data["data"]["item"]["user"]["email"]
 
     # Retrieves the channel ID from the database.
@@ -117,9 +152,11 @@ def onMessageReceive():
     # Sends the message to the user.
     # Fetching the auth token.
     token = tokens.getToken(teamId)
-    slack_client = SlackClient(token=token)
-    response = slack_client.api_call(
-        "chat.postMessage", channel=channelId, text=responseText)
+    slack_client = slack.WebClient(token=token)
+    response = slack_client.chat_postMessage(
+        channel=channelId,
+        blocks=message
+    )
 
     # Returns 200 to Intercom.
     return "OK"
