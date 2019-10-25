@@ -71,12 +71,13 @@ Slack Events
 """
 @slack_events_adapter.on("message")
 def newMessage(payload):
+    print(payload)
     """
     Executes when an IM is sent to Wells.
     """
     # Parsing the received information.
     data = payload["event"]
-    if("bot_id" not in data): # If the message isn't from a user.
+    if("bot_id" not in data): # If the message isn't from a bot.
         # Getting the user's information.
         userId = data["user"]
         token = tokens.getToken(payload["team_id"])
