@@ -1,5 +1,7 @@
-# Node
-node_modules/*
+# Bot gitignore
+node_modules
+lib
+.env*
 
 # Config Files
 config.json
