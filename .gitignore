@@ -2,6 +2,7 @@
 node_modules
 lib
 .env*
+response_examples
 
 # Config Files
 config.json

@@ -1,0 +1,63 @@
+{
+	"type": "home",
+	"blocks": [
+		{
+			"type": "image",
+			"title": {
+				"type": "plain_text",
+				"text": "\n",
+				"emoji": true
+			},
+			"image_url": "https://images.squarespace-cdn.com/content/v1/51841688e4b099d36ddba4e9/1570559049115-2YXV66HKPEA7CZUN06SC/ke17ZwdGBToddI8pDm48kG65pZXfTsmZtdY6usol6j5Zw-zPPgdn4jUwVcJE1ZvWQUxwkmyExglNqGp0IvTJZUJFbgE-7XRK3dMEBRBhUpwBgcZV_dAy-6_7Es9USXrQI9izHuWOQgL_MUlhEHIhPlWr_BvqDYZOwyRnJ9HlncM/Screen+Shot+2019-10-01+at+12.59.32+PM.png?format=750w",
+			"alt_text": "\n"
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "Hey there! Thanks for hiring me :wave:"
+			}
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "Send me a message, and you'll be patched directly through to our 24/7 support team for all of your sourcing needs.\nThese are just a few things which you will be able to do:"
+			}
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "• Open a new account with us \n • Create a new job req \n • Get Support"
+			}
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "Let me know how I can help!"
+			}
+		},
+		{
+			"type": "actions",
+			"elements": [
+				{
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"text": "📩 Message Me"
+					},
+					"url": "https://google.com/"
+				},{
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"text": "ℹ More Info"
+					},
+					"url": "https://hirewells.com/"
+				}
+			]
+		}
+	]
+}

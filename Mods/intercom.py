@@ -24,7 +24,10 @@ class Client(object):
             email {string} -- The user's email.
             message {string} -- The message itself.
         """
-        # TODO: Check to see if there is a message with the user.
+        # Catch to see if there is a link being sent.
+        if (message.startswith("<http") and message.endswith(">") and len(message.split()) == 1):
+            # Message is a solo link.
+            message = "Link: " + message[1:-1]
         # Opening the sqlite3 database.
         conn = sqlite3.connect("database.db")
         c = conn.cursor()

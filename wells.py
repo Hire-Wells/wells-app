@@ -10,7 +10,7 @@ import Mods.intercom as intercom
 import Mods.tokens as tokens
 from slackeventsapi import SlackEventAdapter
 from flask import Flask, request
-from html2text import html2text
+import html2text
 import slack
 
 # Auth Tokens
@@ -71,13 +71,14 @@ Slack Events
 """
 @slack_events_adapter.on("message")
 def newMessage(payload):
-    print(payload)
+    # print(payload)
     """
     Executes when an IM is sent to Wells.
     """
     # Parsing the received information.
     data = payload["event"]
-    if("bot_id" not in data): # If the message isn't from a bot.
+    if("bot_id" not in data):  # If the message isn't from a bot.
+        # If it is a solo link being sent.
         # Getting the user's information.
         userId = data["user"]
         token = tokens.getToken(payload["team_id"])
@@ -86,8 +87,9 @@ def newMessage(payload):
         email = user["email"]
         channelId = data["channel"]
         teamId = payload["team_id"]
+        message = data["text"]
         intercomClient.gotMessage(
-            userId, teamId, channelId, realName, email, data["text"])
+            userId, teamId, channelId, realName, email, message)
 
 
 """
@@ -98,15 +100,19 @@ def onMessageReceive():
     """
     Executes when an intercom message was sent back to the user.
     """
-    data = json.loads(request.data) # Loads the response JSON.
+    data = json.loads(request.data)  # Loads the response JSON.
     if(data["data"]["item"]["type"] != "conversation"):
         print("Incoming intercom test request!")
         return "OK"
+    print(data)
     # Parses the response text and converts it to non-html.
-    responseText = html2text(
+    h = html2text.HTML2Text()
+    h.ignore_links = True
+    responseText = h.handle(
         data["data"]["item"]["conversation_parts"]["conversation_parts"][0]["body"])
 
-    # Formatting a message.
+    # Formatting a message block.
+    # Info: https://api.slack.com/reference/block-kit/block-elements
     message = [
         {
             "type": "section",
@@ -126,7 +132,7 @@ def onMessageReceive():
         for file in attachments:
             fileName = file["name"]
             fileUrl = file["url"]
-            filesText+= "\n" + "*<" + fileUrl + "|" + fileName + ">*"
+            filesText += "\n" + "*<" + fileUrl + "|" + fileName + ">*"
 
         # Adding the divider.
         message.append({
