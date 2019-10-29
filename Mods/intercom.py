@@ -53,7 +53,8 @@ class Client(object):
                 email=email, type="user")[0].id
 
             # Add a new user to the database.
-            c.execute("INSERT INTO users VALUES('" + userId + "','" + channelId + "','" + teamId + "','" + convoId + "','" + realName + "','" + email + "');")
+            c.execute("INSERT INTO users VALUES('" + userId + "','" + channelId + "','" +
+                      teamId + "','" + convoId + "','" + realName + "','" + email+ "');")
             conn.commit()
         else:
             # If the user already exists.

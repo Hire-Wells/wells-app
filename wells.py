@@ -8,6 +8,7 @@ import requests
 import Mods.identity as identity
 import Mods.intercom as intercom
 import Mods.tokens as tokens
+import Mods.slackui as slackui
 from slackeventsapi import SlackEventAdapter
 from flask import Flask, request
 import html2text
@@ -91,6 +92,12 @@ def newMessage(payload):
         intercomClient.gotMessage(
             userId, teamId, channelId, realName, email, message)
 
+@slack_events_adapter.on("app_home_opened")
+def appHome(payload):
+    """
+    Executes when a user opens his app home.
+    """
+    slackui.sendModal(payload)
 
 """
 Intercom Events

@@ -1,0 +1,75 @@
+{
+  "type": "home",
+  "blocks": [
+    {
+      "type": "image",
+      "title": {
+        "type": "plain_text",
+        "text": "\n",
+        "emoji": true
+      },
+      "image_url": "https://images.squarespace-cdn.com/content/v1/51841688e4b099d36ddba4e9/1570559049115-2YXV66HKPEA7CZUN06SC/ke17ZwdGBToddI8pDm48kG65pZXfTsmZtdY6usol6j5Zw-zPPgdn4jUwVcJE1ZvWQUxwkmyExglNqGp0IvTJZUJFbgE-7XRK3dMEBRBhUpwBgcZV_dAy-6_7Es9USXrQI9izHuWOQgL_MUlhEHIhPlWr_BvqDYZOwyRnJ9HlncM/Screen+Shot+2019-10-01+at+12.59.32+PM.png?format=750w",
+      "alt_text": "\n"
+    },
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "Hey there! Thanks for hiring me :wave:"
+      }
+    },
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "Send me a message, and you'll be patched directly through to our 24/7 support team for all of your sourcing needs, all without leaving Slack."
+      }
+    },
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "These are just a few things which you will be able to do:\n - Open a new account with us \n - Create a new job req \n - Get Support \n - Receive profiles of passive candidates we have sourced that are ready to talk to you \n - Get phone interviews scheduled directly on your calendar (using calendly or similar)"
+      }
+    },
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "Wells can source candidates, but also source vendors, suppliers, and contractors... just ask us!\nLet me know how I can help!"
+      }
+    },
+    {
+      "type": "actions",
+      "elements": [
+        {
+          "type": "button",
+          "text": {
+            "type": "plain_text",
+            "text": ":incoming_envelope: Message Me",
+            "emoji": true
+          },
+          "url": "https://google.com/"
+        },
+        {
+          "type": "button",
+          "text": {
+            "type": "plain_text",
+            "text": ":information_source: More Info",
+            "emoji": true
+          },
+          "url": "https://hirewells.com/"
+        },
+        {
+          "type": "button",
+          "text": {
+            "type": "plain_text",
+            "text": ":briefcase: Open a new req",
+            "emoji": true
+          },
+          "url": "https://cgsphoto.com/"
+        }
+      ]
+    }
+  ]
+}
