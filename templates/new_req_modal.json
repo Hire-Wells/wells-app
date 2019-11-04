@@ -1,34 +1,52 @@
-[
-	{
-		"type": "section",
-		"text": {
-			"type": "plain_text",
-			"text": ":wave: Hey There!\n\nPlease enter the details of your req below.",
-			"emoji": true
-		}
-	},
-	{
-		"type": "divider"
-	},
-	{
-		"type": "input",
-		"label": {
-			"type": "plain_text",
-			"text": "(Official) Job Title, Level and Req #:",
-			"emoji": true
-		},
-		"element": {
-			"type": "plain_text_input"
-		}
-	},
-	{
-		"type": "input",
-		"label": {
-			"type": "plain_text",
-			"text": "Location"
-		},
-		"element": {
-			"type": "plain_text_input"
-		}
-	}
-]
+{
+  "type": "modal",
+  "title": {
+    "type": "plain_text",
+    "text": "New Req",
+    "emoji": true
+  },
+  "submit": {
+    "type": "plain_text",
+    "text": "Submit",
+    "emoji": true
+  },
+  "close": {
+    "type": "plain_text",
+    "text": "Cancel",
+    "emoji": true
+  },
+  "blocks": [
+    {
+      "type": "section",
+      "text": {
+        "type": "plain_text",
+        "text": ":wave: Hey There!\n\nPlease enter the details of your req below.",
+        "emoji": true
+      }
+    },
+    {
+      "type": "divider"
+    },
+    {
+      "type": "input",
+      "label": {
+        "type": "plain_text",
+        "text": "(Official) Job Title, Level and Req #:",
+        "emoji": true
+      },
+      "element": {
+        "type": "plain_text_input"
+      }
+    },
+    {
+      "type": "input",
+      "label": {
+        "type": "plain_text",
+        "text": "Location"
+      },
+      "element": {
+        "type": "plain_text_input"
+      }
+    }
+  ]
+}
