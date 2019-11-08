@@ -13,3 +13,10 @@ teamId text,
 botUserId text,
 botAccessToken text
 );
+
+CREATE TABLE teams(
+userId text,
+convoId text,
+realName text,
+context text
+);

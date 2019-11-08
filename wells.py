@@ -3,16 +3,27 @@ Wells Web API.
 """
 
 import json
+import os
 import sqlite3
 import requests
 import Mods.identity as identity
 import Mods.intercom as intercom
 import Mods.tokens as tokens
 import Mods.slackui as slackui
+from Mods.teams_bot import TeamsBot
 from slackeventsapi import SlackEventAdapter
 from flask import Flask, request
 import html2text
 import slack
+
+# Bot framework module
+import asyncio
+from datetime import datetime
+from types import MethodType
+
+from flask import Flask, request, Response
+from botbuilder.core import BotFrameworkAdapterSettings, TurnContext, BotFrameworkAdapter
+from botbuilder.schema import Activity, ActivityTypes
 
 # Auth Tokens
 with open("config.json", "r") as h:
@@ -22,7 +33,50 @@ with open("config.json", "r") as h:
 SLACK_SIGNING_SECRET = config["slack"]["SIGNING_SECRET"]
 
 # Flask app
-app = Flask(__name__)
+#app = Flask(__name__)
+app = Flask(__name__, instance_relative_config=True)
+app.config.from_object("config.DefaultConfig")
+
+# --------------
+# Teams loop
+LOOP = asyncio.get_event_loop()
+# Create adapter.
+# See https://aka.ms/about-bot-adapter to learn more about how bots work.
+SETTINGS = BotFrameworkAdapterSettings(
+    app.config["APP_ID"], app.config["APP_PASSWORD"])
+ADAPTER = BotFrameworkAdapter(SETTINGS)
+
+# Catch-all for errors.
+
+
+async def on_error(self, context: TurnContext, error: Exception):
+    # This check writes out errors to console log .vs. app insights.
+    # NOTE: In production environment, you should consider logging this to Azure
+    #       application insights.
+    print(f"\n [on_turn_error] unhandled error: {error}", file=sys.stderr)
+
+    # Send a message to the user
+    await context.send_activity("The bot encountered an error or bug.")
+    await context.send_activity("To continue to run this bot, please fix the bot source code.")
+    # Send a trace activity if we're talking to the Bot Framework Emulator
+    if context.activity.channel_id == 'emulator':
+        # Create a trace activity that contains the error object
+        trace_activity = Activity(
+            label="TurnError",
+            name="on_turn_error Trace",
+            timestamp=datetime.utcnow(),
+            type=ActivityTypes.trace,
+            value=f"{error}",
+            value_type="https://www.botframework.com/schemas/error"
+        )
+        # Send a trace activity, which will be displayed in Bot Framework Emulator
+        await context.send_activity(trace_activity)
+
+ADAPTER.on_turn_error = MethodType(on_error, ADAPTER)
+
+# Create the Bot
+BOT = TeamsBot(config["intercom"]["ACCESS_TOKEN"])
+# --------------
 
 # Slack events API object.
 slack_events_adapter = SlackEventAdapter(
@@ -31,6 +85,33 @@ slack_events_adapter = SlackEventAdapter(
 
 # Intercom client
 intercomClient = intercom.Client(config["intercom"]["ACCESS_TOKEN"])
+
+"""
+Microsoft Teams Events
+"""
+# Listen for incoming requests on /teams/messages
+@app.route("/teams/messages", methods=["POST"])
+def messages():
+    # Main bot message handler.
+    if "application/json" in request.headers["Content-Type"]:
+        body = request.json
+    else:
+        return Response(status=415)
+
+    activity = Activity().deserialize(body)
+    auth_header = (
+        request.headers["Authorization"] if "Authorization" in request.headers else ""
+    )
+
+    try:
+        task = LOOP.create_task(
+            ADAPTER.process_activity(activity, auth_header, BOT.on_turn)
+        )
+        LOOP.run_until_complete(task)
+        return Response(status=201)
+    except Exception as exception:
+        raise exception
+
 
 """
 Auth Events
@@ -92,12 +173,14 @@ def newMessage(payload):
         intercomClient.gotMessage(
             userId, teamId, channelId, realName, email, message)
 
+
 @slack_events_adapter.on("app_home_opened")
 def appHome(payload):
     """
     Executes when a user opens his app home.
     """
     slackui.sendModal(payload)
+
 
 """
 Intercom Events
@@ -178,4 +261,7 @@ def onMessageReceive():
 
 # Start the server on port 3000
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=3000)
+    try:
+        app.run(ssl_context="adhoc", host="0.0.0.0", port=3978)
+    except Exception as exception:
+        raise exception
