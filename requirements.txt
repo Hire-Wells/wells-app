@@ -8,3 +8,4 @@ flask
 html2text
 slackeventsapi
 html2markdown
+pyopenssl
