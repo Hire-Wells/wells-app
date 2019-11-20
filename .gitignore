@@ -145,3 +145,5 @@ dmypy.json
 
 # uWSGI Server
 wells.ini
+wsgi.py
+wells.sock
