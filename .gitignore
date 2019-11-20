@@ -142,7 +142,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-/config.py
 
 # uWSGI Server
 wells.ini
