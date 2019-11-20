@@ -8,4 +8,5 @@ flask
 html2text
 slackeventsapi
 html2markdown
+botbuilder-core>=4.4.0b1
 pyopenssl
