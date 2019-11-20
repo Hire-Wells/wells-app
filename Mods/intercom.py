@@ -6,6 +6,7 @@ Carlos Saucedo, 2019.
 from intercom.client import Client as intercomClient
 import sqlite3
 import pickle
+import codecs
 
 
 class Client(object):
@@ -30,10 +31,13 @@ class Client(object):
         conn = sqlite3.connect("database.db")
         c = conn.cursor()
         c.execute("SELECT * FROM teams WHERE userId='"+userId+"';")
-        if(len(c.fetchone()) == 0):
+        if(c.fetchone() == None):
             # User does not exist.
             # Add user to Intercom.
-            user = self.client.users.create(id=userId, name=realName)
+            user = self.client.users.create(user_id=userId, name=realName)
+            # Set user's source attribute.
+            user.custom_attributes["Source"] = "Microsoft Teams"
+            self.client.users.save(user)
             # Send the message to intercom.
             newMsg = self.client.messages.create(**{
                 "from": {
@@ -42,15 +46,14 @@ class Client(object):
                 },
                 "body": message
             })
-
             # Fetch the conversationID.
             convoId = self.client.conversations.find_all(
-                id=userId, type="user")[0].id
-            context = pickle.dump(turn_context)
+                user_id=userId, type="user")[0].id
+            context = codecs.encode(pickle.dumps(turn_context), "base64").decode()
 
             # Add user into db
-            c.execute("INSERT INTO teams VALUES('"+userId+"','" +
-                      convoId+"','"+realName+"','"+context+"');")
+            c.execute('INSERT INTO teams VALUES(?, ?, ?, ?)',
+                      (userId, convoId, realName, context))
         else:
             # Fetch the conversation ID.
             c.execute("SELECT convoId FROM users WHERE userId='"+userId+"';")
@@ -61,7 +64,7 @@ class Client(object):
                     id=convoId, type="user", user_id=userId, message_type="comment", body=message)
             else:
                 # If the conversation has been archived.
-                #TODO: `user.id` doesn't exist in that scope?
+                # TODO: `user.id` doesn't exist in that scope?
                 newMsg = self.client.messages.create(**{
                     "from": {
                         "type": "user",
@@ -74,8 +77,9 @@ class Client(object):
                     user_id=userId, type="user")[0].id
                 # Update the database with the new conversation ID.
                 c.execute("UPDATE teams SET convoId='" + convoId +
-                        "' WHERE userId='" + userId + "';")
-                conn.commit()
+                          "' WHERE userId='" + userId + "';")
+        conn.commit()
+        conn.close()
 
     def gotMessage(self, userId, teamId, channelId, realName, email, message):
         """Pushes a message's contents and metadata to Intercom.
@@ -98,10 +102,12 @@ class Client(object):
         user = None
         if(len(c.fetchall()) == 0):
             # If the user does not exist
-
             # Add a new user object to intercom.
-            # Send a message as the user.
             user = self.client.users.create(email=email, name=realName)
+            # Set the user's source attribute.
+            user.custom_attributes["Source"] = "Slack"
+            self.client.users.save(user)
+            # Send a message as the user.
             newMsg = self.client.messages.create(**{
                 "from": {
                     "type": "user",
@@ -117,7 +123,6 @@ class Client(object):
             # Add a new user to the database.
             c.execute("INSERT INTO users VALUES('" + userId + "','" + channelId + "','" +
                       teamId + "','" + convoId + "','" + realName + "','" + email + "');")
-            conn.commit()
         else:
             # If the user already exists.
             # Fetch the conversation ID.
@@ -142,5 +147,5 @@ class Client(object):
                 # Update the database with the new conversation ID.
                 c.execute("UPDATE users SET convoId='" + convoId +
                           "' WHERE email='" + email + "';")
-                conn.commit()
+        conn.commit()
         conn.close()

@@ -1,5 +1,6 @@
 """
 Wells Web API.
+Carlos Saucedo, 2019
 """
 
 import json
@@ -20,6 +21,9 @@ import slack
 import asyncio
 from datetime import datetime
 from types import MethodType
+import sys
+import pickle
+import codecs
 
 from flask import Flask, request, Response
 from botbuilder.core import BotFrameworkAdapterSettings, TurnContext, BotFrameworkAdapter
@@ -37,46 +41,17 @@ SLACK_SIGNING_SECRET = config["slack"]["SIGNING_SECRET"]
 app = Flask(__name__, instance_relative_config=True)
 app.config.from_object("config.DefaultConfig")
 
-# --------------
 # Teams loop
 LOOP = asyncio.get_event_loop()
 # Create adapter.
 # See https://aka.ms/about-bot-adapter to learn more about how bots work.
 SETTINGS = BotFrameworkAdapterSettings(
     app.config["APP_ID"], app.config["APP_PASSWORD"])
+print(app.config["APP_ID"])
 ADAPTER = BotFrameworkAdapter(SETTINGS)
-
-# Catch-all for errors.
-
-
-async def on_error(self, context: TurnContext, error: Exception):
-    # This check writes out errors to console log .vs. app insights.
-    # NOTE: In production environment, you should consider logging this to Azure
-    #       application insights.
-    print(f"\n [on_turn_error] unhandled error: {error}", file=sys.stderr)
-
-    # Send a message to the user
-    await context.send_activity("The bot encountered an error or bug.")
-    await context.send_activity("To continue to run this bot, please fix the bot source code.")
-    # Send a trace activity if we're talking to the Bot Framework Emulator
-    if context.activity.channel_id == 'emulator':
-        # Create a trace activity that contains the error object
-        trace_activity = Activity(
-            label="TurnError",
-            name="on_turn_error Trace",
-            timestamp=datetime.utcnow(),
-            type=ActivityTypes.trace,
-            value=f"{error}",
-            value_type="https://www.botframework.com/schemas/error"
-        )
-        # Send a trace activity, which will be displayed in Bot Framework Emulator
-        await context.send_activity(trace_activity)
-
-ADAPTER.on_turn_error = MethodType(on_error, ADAPTER)
 
 # Create the Bot
 BOT = TeamsBot(config["intercom"]["ACCESS_TOKEN"])
-# --------------
 
 # Slack events API object.
 slack_events_adapter = SlackEventAdapter(
@@ -194,66 +169,78 @@ def onMessageReceive():
     if(data["data"]["item"]["type"] != "conversation"):
         print("Incoming intercom test request!")
         return "OK"
-    print(data)
     # Parses the response text and converts it to non-html.
     h = html2text.HTML2Text()
     h.ignore_links = True
     responseText = h.handle(
         data["data"]["item"]["conversation_parts"]["conversation_parts"][0]["body"])
-
-    # Formatting a message block.
-    # Info: https://api.slack.com/reference/block-kit/block-elements
-    message = [
-        {
-            "type": "section",
-            "text": {
-                "type": "plain_text",
-                "text": responseText
-            }
-        }
-    ]
-
-    # Adding links per attachment.
-    attachments = data["data"]["item"]["conversation_parts"]["conversation_parts"][0]["attachments"]
-    if(len(attachments) > 0):
-        # If there is at least one attachment.
-
-        filesText = "_Attachments:_"
-        for file in attachments:
-            fileName = file["name"]
-            fileUrl = file["url"]
-            filesText += "\n" + "*<" + fileUrl + "|" + fileName + ">*"
-
-        # Adding the divider.
-        message.append({
-            "type": "divider"
-        })
-        message.append({
-            "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": filesText
-            }
-        })
-
-    email = data["data"]["item"]["user"]["email"]
-
-    # Retrieves the channel ID from the database.
+    # Check to see if User is from Teams or Slack.
     conn = sqlite3.connect("database.db")
     c = conn.cursor()
-    c.execute("SELECT channelId, teamId FROM users WHERE email='" + email + "'")
-    user = c.fetchone()
-    channelId = user[0]
-    teamId = user[1]
+    userId = data["data"]["item"]["user"]["user_id"]
+    if userId != None:
+        # User is a Teams user.
+        conn = sqlite3.connect("database.db")
+        c = conn.cursor()
+        c.execute('SELECT context FROM teams WHERE userId=?;', (userId,))
+        context_text = c.fetchone()[0]
+        context = pickle.loads(codecs.decode(context_text.encode(), "base64"))
+        LOOP.run_until_complete(BOT.send_message(context,responseText))
+    else:
+        # User is a slack user.
+        # Formatting a message block.
+        # Info: https://api.slack.com/reference/block-kit/block-elements
+        message = [
+            {
+                "type": "section",
+                "text": {
+                    "type": "plain_text",
+                    "text": responseText
+                }
+            }
+        ]
 
-    # Sends the message to the user.
-    # Fetching the auth token.
-    token = tokens.getToken(teamId)
-    slack_client = slack.WebClient(token=token)
-    response = slack_client.chat_postMessage(
-        channel=channelId,
-        blocks=message
-    )
+        # Adding links per attachment.
+        attachments = data["data"]["item"]["conversation_parts"]["conversation_parts"][0]["attachments"]
+        if(len(attachments) > 0):
+            # If there is at least one attachment.
+
+            filesText = "_Attachments:_"
+            for file in attachments:
+                fileName = file["name"]
+                fileUrl = file["url"]
+                filesText += "\n" + "*<" + fileUrl + "|" + fileName + ">*"
+
+            # Adding the divider.
+            message.append({
+                "type": "divider"
+            })
+            message.append({
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": filesText
+                }
+            })
+
+        email = data["data"]["item"]["user"]["email"]
+
+        # Retrieves the channel ID from the database.
+        conn = sqlite3.connect("database.db")
+        c = conn.cursor()
+        c.execute("SELECT channelId, teamId FROM users WHERE email='" + email + "'")
+        user = c.fetchone()
+        channelId = user[0]
+        teamId = user[1]
+
+        # Sends the message to the user.
+        # Fetching the auth token.
+        token = tokens.getToken(teamId)
+        slack_client = slack.WebClient(token=token)
+        response = slack_client.chat_postMessage(
+            channel=channelId,
+            blocks=message
+        )
 
     # Returns 200 to Intercom.
     return "OK"
@@ -262,6 +249,6 @@ def onMessageReceive():
 # Start the server on port 3000
 if __name__ == "__main__":
     try:
-        app.run(ssl_context="adhoc", host="0.0.0.0", port=3978)
+        app.run(host="0.0.0.0", port=3978)
     except Exception as exception:
         raise exception

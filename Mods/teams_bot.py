@@ -1,6 +1,7 @@
-# Copyright (c) Microsoft Corporation. All rights reserved.
-# Licensed under the MIT License.
-
+"""
+Microsoft Teams integration module.
+Carlos Saucedo, 2019
+"""
 from botbuilder.core import ActivityHandler, MessageFactory, TurnContext
 from botbuilder.schema import ChannelAccount
 import Mods.intercom, json, pickle, sqlite3
@@ -18,11 +19,10 @@ class TeamsBot(ActivityHandler):
                 await turn_context.send_activity("Hello and welcome!")
 
     async def on_message_activity(self, turn_context: TurnContext):
-        print(turn_context.activity.from_property)
         userId = turn_context.activity.from_property.id
         realName = turn_context.activity.from_property.name
-        
-        return await turn_context.send_activity(MessageFactory.text(f"Echo: {turn_context.activity.text}"))
+        self.intercom.gotTeamsMessage(turn_context)
+        #return await turn_context.send_activity(MessageFactory.text(f"Echo: {turn_context.activity.text}"))
 
     async def send_message(self, turn_context, msg):
         """Sends a message from Intercom to the Teams DM.
