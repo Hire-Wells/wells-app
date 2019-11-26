@@ -37,7 +37,6 @@ with open("config.json", "r") as h:
 SLACK_SIGNING_SECRET = config["slack"]["SIGNING_SECRET"]
 
 # Flask app
-#app = Flask(__name__)
 app = Flask(__name__, instance_relative_config=True)
 app.config.from_object("config.DefaultConfig")
 
@@ -128,14 +127,20 @@ Slack Events
 """
 @slack_events_adapter.on("message")
 def newMessage(payload):
-    # print(payload)
     """
     Executes when an IM is sent to Wells.
     """
     # Parsing the received information.
     data = payload["event"]
+    files = list()  # Creating the files list.
     if("bot_id" not in data):  # If the message isn't from a bot.
         # If it is a solo link being sent.
+        # Managing attachments.
+        if "files" in data:
+            # Message contains attachments.
+            for file in data["files"]:
+                files.append(file["url_private_download"])
+
         # Getting the user's information.
         userId = data["user"]
         token = tokens.getToken(payload["team_id"])
@@ -145,8 +150,9 @@ def newMessage(payload):
         channelId = data["channel"]
         teamId = payload["team_id"]
         message = data["text"]
+
         intercomClient.gotMessage(
-            userId, teamId, channelId, realName, email, message)
+            userId, teamId, channelId, realName, email, message, files)
 
 
 @slack_events_adapter.on("app_home_opened")
@@ -167,7 +173,6 @@ def onMessageReceive():
     """
     data = json.loads(request.data)  # Loads the response JSON.
     if(data["data"]["item"]["type"] != "conversation"):
-        print("Incoming intercom test request!")
         return "OK"
     # Parses the response text and converts it to non-html.
     h = html2text.HTML2Text()
@@ -185,7 +190,7 @@ def onMessageReceive():
         c.execute('SELECT context FROM teams WHERE userId=?;', (userId,))
         context_text = c.fetchone()[0]
         context = pickle.loads(codecs.decode(context_text.encode(), "base64"))
-        LOOP.run_until_complete(BOT.send_message(context,responseText))
+        LOOP.run_until_complete(BOT.send_message(context, responseText))
     else:
         # User is a slack user.
         # Formatting a message block.

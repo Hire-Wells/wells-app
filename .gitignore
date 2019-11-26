@@ -4,6 +4,9 @@ lib
 .env*
 response_examples
 
+# Static Files
+static/uploads/*
+
 # Config Files
 config.json
 

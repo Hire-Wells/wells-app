@@ -7,6 +7,10 @@ from intercom.client import Client as intercomClient
 import sqlite3
 import pickle
 import codecs
+import Mods.tokens as tokens
+import requests
+import os
+import uuid
 
 
 class Client(object):
@@ -18,10 +22,10 @@ class Client(object):
         self.client = intercomClient(personal_access_token=key)
 
     def gotTeamsMessage(self, turn_context):
-        """Pushes a message from Teams to intercom.
+        """Sends an MS Teams message to Intercom.
 
         Arguments:
-            context {TurnContext} -- The MS Teams context metadata.
+            turn_context {TurnContext} -- MS Teams message metadata.
         """
         # Fetching values
         userId = turn_context.activity.from_property.id
@@ -49,7 +53,8 @@ class Client(object):
             # Fetch the conversationID.
             convoId = self.client.conversations.find_all(
                 user_id=userId, type="user")[0].id
-            context = codecs.encode(pickle.dumps(turn_context), "base64").decode()
+            context = codecs.encode(pickle.dumps(
+                turn_context), "base64").decode()
 
             # Add user into db
             c.execute('INSERT INTO teams VALUES(?, ?, ?, ?)',
@@ -81,7 +86,7 @@ class Client(object):
         conn.commit()
         conn.close()
 
-    def gotMessage(self, userId, teamId, channelId, realName, email, message):
+    def gotMessage(self, userId, teamId, channelId, realName, email, message, fileUrls):
         """Pushes a message's contents and metadata to Intercom.
 
         Arguments:
@@ -89,11 +94,31 @@ class Client(object):
             userName {string} -- The user's name.
             email {string} -- The user's email.
             message {string} -- The message itself.
+            files {list} -- A list of attachment URLs.
         """
+        files = list()
         # Catch to see if there is a link being sent.
         if (message.startswith("<http") and message.endswith(">") and len(message.split()) == 1):
             # Message is a solo link.
             message = "Link: " + message[1:-1]
+        # Handling Files.
+        if(len(fileUrls) > 0):
+            # Check to see if only attachment was sent.
+            if(len(message) == 0):
+                message = "User sent attachment(s):"
+            # There are files in the array.
+            # Fetch the token to download files.
+            token = tokens.getToken(teamId)
+            for fileUrl in fileUrls:
+                # For each file in the array,
+                # Download the file.
+                extension = os.path.splitext(fileUrl)[1]
+                r = requests.get(fileUrl, headers={
+                                 "Authorization": "Bearer " + token})
+                fileName = str(uuid.uuid1()) + extension
+                open("static/uploads/" + fileName, "wb").write(r.content)
+                files.append(
+                    "https://api.hirewells.com/static/uploads/" + fileName)
         # Opening the sqlite3 database.
         conn = sqlite3.connect("database.db")
         c = conn.cursor()
@@ -113,7 +138,8 @@ class Client(object):
                     "type": "user",
                     "id": user.id
                 },
-                "body": message
+                "body": message,
+                "attachment_urls": files
             })
 
             # Fetch the created conversation ID.
@@ -131,7 +157,7 @@ class Client(object):
             if(convoId != None):
                 # If the conversation is active.
                 self.client.conversations.reply(
-                    id=convoId, type="user", email=email, message_type="comment", body=message)
+                    id=convoId, type="user", email=email, message_type="comment", body=message, attachment_urls=files)
             else:
                 # If the conversation has been archived.
                 newMsg = self.client.messages.create(**{
@@ -139,7 +165,8 @@ class Client(object):
                         "type": "user",
                         "id": user.id
                     },
-                    "body": message
+                    "body": message,
+                    "attachment_urls": files
                 })
                 # Fetch the created conversation ID.
                 convoId = self.client.conversations.find_all(

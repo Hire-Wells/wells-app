@@ -4,13 +4,17 @@ Carlos Saucedo, 2019
 """
 from botbuilder.core import ActivityHandler, MessageFactory, TurnContext
 from botbuilder.schema import ChannelAccount
-import Mods.intercom, json, pickle, sqlite3
+import Mods.intercom
+import json
+import pickle
+import sqlite3
 
 
 class TeamsBot(ActivityHandler):
     def __init__(self, intercomToken):
         # Creating intercom client.
         self.intercom = Mods.intercom.Client(intercomToken)
+
     async def on_members_added_activity(
         self, members_added: [ChannelAccount], turn_context: TurnContext
     ):
@@ -22,11 +26,10 @@ class TeamsBot(ActivityHandler):
         userId = turn_context.activity.from_property.id
         realName = turn_context.activity.from_property.name
         self.intercom.gotTeamsMessage(turn_context)
-        #return await turn_context.send_activity(MessageFactory.text(f"Echo: {turn_context.activity.text}"))
 
     async def send_message(self, turn_context, msg):
         """Sends a message from Intercom to the Teams DM.
-        
+
         Arguments:
             turn_context {TurnContext} -- The context to send the message to.
             msg {string} -- Message to send.
