@@ -62,7 +62,7 @@ class Client(object):
         else:
             # Fetch the conversation ID.
             c.execute("SELECT convoId FROM users WHERE userId='"+userId+"';")
-            convoId = c.fetchone[0]
+            convoId = c.fetchone()[0]
             if(convoId != None):
                 # If the conversation is active.
                 self.client.conversations.reply(
