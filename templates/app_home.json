@@ -44,15 +44,7 @@
       "elements": [
         {
           "type": "button",
-          "text": {
-            "type": "plain_text",
-            "text": ":incoming_envelope: Message Me",
-            "emoji": true
-          },
-          "url": "https://google.com/"
-        },
-        {
-          "type": "button",
+          "action_id": "button_moreInfo",
           "text": {
             "type": "plain_text",
             "text": ":information_source: More Info",
@@ -62,12 +54,12 @@
         },
         {
           "type": "button",
+          "action_id": "button_newReq",
           "text": {
             "type": "plain_text",
             "text": ":briefcase: Open a new req",
             "emoji": true
-          },
-          "url": "https://cgsphoto.com/"
+          }
         }
       ]
     }

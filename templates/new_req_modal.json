@@ -20,7 +20,7 @@
       "type": "section",
       "text": {
         "type": "plain_text",
-        "text": ":wave: Hey There!\n\nPlease enter the details of your req below.",
+        "text": "Please enter the details of your req below, and we Wells will be in touch with you soon.",
         "emoji": true
       }
     },
@@ -29,6 +29,7 @@
     },
     {
       "type": "input",
+      "block_id": "jobInfo",
       "label": {
         "type": "plain_text",
         "text": "(Official) Job Title, Level and Req #:",
@@ -37,15 +38,64 @@
       "element": {
         "type": "plain_text_input"
       }
-    },
-    {
+    },{
       "type": "input",
+      "block_id": "company",
       "label": {
         "type": "plain_text",
-        "text": "Location"
+        "text": "Company Name",
+        "emoji": true
       },
       "element": {
         "type": "plain_text_input"
+      }
+    },{
+      "type": "input",
+      "block_id": "location",
+      "label": {
+        "type": "plain_text",
+        "text": "Location",
+        "emoji": true
+      },
+      "element": {
+        "type": "plain_text_input"
+      }
+    },
+    {
+      "type": "input",
+      "block_id": "relocation",
+      "label": {
+        "type": "plain_text",
+        "text": "Eligible for relocation?"
+      },
+      "element": {
+        "type": "plain_text_input",
+        "placeholder": {"type": "plain_text", "text": "Yes/No"}
+      }
+    },
+    {
+      "type": "input",
+      "block_id": "requirements",
+      "label": {
+        "type": "plain_text",
+        "text": "Key Requirements and Responsibilities"
+      },
+      "element": {
+        "type": "plain_text_input",
+        "multiline": true
+      }
+    },
+    {
+      "type": "input",
+      "optional": true,
+      "block_id": "additionalInfo",
+      "label": {
+        "type": "plain_text",
+        "text": "Additional Information"
+      },
+      "element": {
+        "type": "plain_text_input",
+        "multiline": true
       }
     }
   ]

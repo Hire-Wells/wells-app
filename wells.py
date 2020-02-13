@@ -11,6 +11,7 @@ import Mods.identity as identity
 import Mods.intercom as intercom
 import Mods.tokens as tokens
 import Mods.slackui as slackui
+import Mods.errors as errors
 from Mods.teams_bot import TeamsBot
 from slackeventsapi import SlackEventAdapter
 from flask import Flask, request
@@ -46,7 +47,6 @@ LOOP = asyncio.get_event_loop()
 # See https://aka.ms/about-bot-adapter to learn more about how bots work.
 SETTINGS = BotFrameworkAdapterSettings(
     app.config["APP_ID"], app.config["APP_PASSWORD"])
-print(app.config["APP_ID"])
 ADAPTER = BotFrameworkAdapter(SETTINGS)
 
 # Create the Bot
@@ -160,8 +160,29 @@ def appHome(payload):
     """
     Executes when a user opens his app home.
     """
-    slackui.sendModal(payload)
+    slackui.sendHomeScreen(payload)
 
+
+"""
+Slack Actions
+"""
+@app.route("/slack/actions/", methods=["POST"])
+def onAction():
+    # Loads the request information as JSON.
+    payload = json.loads(request.form.to_dict()["payload"])
+    if payload["type"] == "block_actions": 
+        # A button was pressed.
+        actionId=payload["actions"][0]["action_id"]
+        if(actionId == "button_newReq"):
+            slackui.sendModal(payload, modalName="new_req_modal")
+        # else:
+        #     print(payload)
+    elif(payload["type"] == "view_submission"):
+        # A modal submission went through.
+        print(payload["view"]["state"]["values"])
+    else:
+        print(payload)
+    return Response(status=200)
 
 """
 Intercom Events
@@ -171,31 +192,31 @@ def onMessageReceive():
     """
     Executes when an intercom message was sent back to the user.
     """
-    data = json.loads(request.data)  # Loads the response JSON.
+    data=json.loads(request.data)  # Loads the response JSON.
     if(data["data"]["item"]["type"] != "conversation"):
-        return "OK"
+        return Response(status=200)
     # Parses the response text and converts it to non-html.
-    h = html2text.HTML2Text()
-    h.ignore_links = True
-    responseText = h.handle(
+    h=html2text.HTML2Text()
+    h.ignore_links=True
+    responseText=h.handle(
         data["data"]["item"]["conversation_parts"]["conversation_parts"][0]["body"])
     # Check to see if User is from Teams or Slack.
-    conn = sqlite3.connect("database.db")
-    c = conn.cursor()
-    userId = data["data"]["item"]["user"]["user_id"]
+    conn=sqlite3.connect("database.db")
+    c=conn.cursor()
+    userId=data["data"]["item"]["user"]["user_id"]
     if userId != None:
         # User is a Teams user.
-        conn = sqlite3.connect("database.db")
-        c = conn.cursor()
+        conn=sqlite3.connect("database.db")
+        c=conn.cursor()
         c.execute('SELECT context FROM teams WHERE userId=?;', (userId,))
-        context_text = c.fetchone()[0]
-        context = pickle.loads(codecs.decode(context_text.encode(), "base64"))
+        context_text=c.fetchone()[0]
+        context=pickle.loads(codecs.decode(context_text.encode(), "base64"))
         LOOP.run_until_complete(BOT.send_message(context, responseText))
     else:
         # User is a slack user.
         # Formatting a message block.
         # Info: https://api.slack.com/reference/block-kit/block-elements
-        message = [
+        message=[
             {
                 "type": "section",
                 "text": {
@@ -206,14 +227,14 @@ def onMessageReceive():
         ]
 
         # Adding links per attachment.
-        attachments = data["data"]["item"]["conversation_parts"]["conversation_parts"][0]["attachments"]
+        attachments=data["data"]["item"]["conversation_parts"]["conversation_parts"][0]["attachments"]
         if(len(attachments) > 0):
             # If there is at least one attachment.
 
-            filesText = "_Attachments:_"
+            filesText="_Attachments:_"
             for file in attachments:
-                fileName = file["name"]
-                fileUrl = file["url"]
+                fileName=file["name"]
+                fileUrl=file["url"]
                 filesText += "\n" + "*<" + fileUrl + "|" + fileName + ">*"
 
             # Adding the divider.
@@ -228,27 +249,27 @@ def onMessageReceive():
                 }
             })
 
-        email = data["data"]["item"]["user"]["email"]
+        email=data["data"]["item"]["user"]["email"]
 
         # Retrieves the channel ID from the database.
-        conn = sqlite3.connect("database.db")
-        c = conn.cursor()
+        conn=sqlite3.connect("database.db")
+        c=conn.cursor()
         c.execute("SELECT channelId, teamId FROM users WHERE email='" + email + "'")
-        user = c.fetchone()
-        channelId = user[0]
-        teamId = user[1]
+        user=c.fetchone()
+        channelId=user[0]
+        teamId=user[1]
 
         # Sends the message to the user.
         # Fetching the auth token.
-        token = tokens.getToken(teamId)
-        slack_client = slack.WebClient(token=token)
-        response = slack_client.chat_postMessage(
+        token=tokens.getToken(teamId)
+        slack_client=slack.WebClient(token=token)
+        response=slack_client.chat_postMessage(
             channel=channelId,
             blocks=message
         )
 
     # Returns 200 to Intercom.
-    return "OK"
+    return Response(status=200)
 
 
 # Start the server on port 3000
