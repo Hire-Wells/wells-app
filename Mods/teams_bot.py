@@ -20,7 +20,7 @@ class TeamsBot(ActivityHandler):
     ):
         for member in members_added:
             if member.id != turn_context.activity.recipient.id:
-                await turn_context.send_activity("Hello and welcome!")
+                await turn_context.send_activity("Hello and welcome! Please let me know what I can help you with and a team of highly-experienced sourcers will contact you back as soon as possible.")
 
     async def on_message_activity(self, turn_context: TurnContext):
         userId = turn_context.activity.from_property.id
