@@ -201,7 +201,6 @@ class Client(object):
                 success = response["ok"]
                 if not success:
                     raise errors.APIError(response)
-                return success
 
             c.execute("SELECT convoId FROM users WHERE email='" + email + "';")
             convoId = c.fetchone()[0]
