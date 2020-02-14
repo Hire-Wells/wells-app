@@ -11,6 +11,8 @@ import Mods.tokens as tokens
 import requests
 import os
 import uuid
+import json
+import Mods.errors as errors
 
 
 class Client(object):
@@ -96,6 +98,7 @@ class Client(object):
             message {string} -- The message itself.
             files {list} -- A list of attachment URLs.
         """
+
         files = list()
         # Catch to see if there is a link being sent.
         if (message.startswith("<http") and message.endswith(">") and len(message.split()) == 1):
@@ -147,11 +150,59 @@ class Client(object):
                 email=email, type="user")[0].id
 
             # Add a new user to the database.
+            print("Adding new user")
             c.execute("INSERT INTO users VALUES('" + userId + "','" + channelId + "','" +
                       teamId + "','" + convoId + "','" + realName + "','" + email + "');")
+            conn.commit()
+            # TODO: Send auto response back to Intercom.
+            # Retrieving message text.
+            with open("templates/auto_responses.json") as h:
+                msg = json.load(h)["on_join_message"]
+            # Creating new request.
+            URL = "https://slack.com/api/chat.postMessage"
+            # Crafting a data object to send to Slack.
+            data = {
+                "token": tokens.getToken(teamId),
+                "channel": channelId,
+                "text": msg
+            }
+            # Making the request.
+            r = requests.post(url=URL, data=data)
+
+            # Checking the status of the response.
+            response = json.loads(r.text)
+            success = response["ok"]
+            if not success:
+                raise errors.APIError(response)
+            return success
         else:
             # If the user already exists.
             # Fetch the conversation ID.
+
+            # Check if Admins are online.
+            if not self.usersOnline():
+                # If there are no users online
+                # Retrieving message text.
+                with open("templates/auto_responses.json") as h:
+                    msg = json.load(h)["on_away_response"]
+                # Creating new request.
+                URL = "https://slack.com/api/chat.postMessage"
+                # Crafting a data object to send to Slack.
+                data = {
+                    "token": tokens.getToken(teamId),
+                    "channel": channelId,
+                    "text": msg
+                }
+                # Making the request.
+                r = requests.post(url=URL, data=data)
+
+                # Checking the status of the response.
+                response = json.loads(r.text)
+                success = response["ok"]
+                if not success:
+                    raise errors.APIError(response)
+                return success
+
             c.execute("SELECT convoId FROM users WHERE email='" + email + "';")
             convoId = c.fetchone()[0]
             if(convoId != None):
@@ -176,3 +227,12 @@ class Client(object):
                           "' WHERE email='" + email + "';")
         conn.commit()
         conn.close()
+
+    def usersOnline(self):
+        """Checks to see if any Intercom users are online.
+        """
+        for admin in self.client.admins.all():
+            if(admin.email and not admin.email.startswith("operator+") and not admin.away_mode_enabled):
+                print(admin.email + " " + str(admin.away_mode_enabled))
+                return True
+        return False

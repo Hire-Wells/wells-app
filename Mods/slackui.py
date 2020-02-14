@@ -72,5 +72,5 @@ def sendModal(payload, modalName):
     response = json.loads(r.text)
     success = response["ok"]
     if not success:
-        raise error.APIError(response)
+        raise errors.APIError(response)
     return success

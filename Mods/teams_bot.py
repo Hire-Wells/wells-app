@@ -18,9 +18,14 @@ class TeamsBot(ActivityHandler):
     async def on_members_added_activity(
         self, members_added: [ChannelAccount], turn_context: TurnContext
     ):
+        # Sending a welcome message.
+        # TODO: Send the auto response as an intercom admin response.
+        # Reading in the message text.
+        with open("templates/auto_responses.json") as h:
+            msg = json.load(h)["on_join_message"]
         for member in members_added:
             if member.id != turn_context.activity.recipient.id:
-                await turn_context.send_activity("Hello and welcome! Please let me know what I can help you with and a team of highly-experienced sourcers will contact you back as soon as possible.")
+                await turn_context.send_activity(msg)
 
     async def on_message_activity(self, turn_context: TurnContext):
         userId = turn_context.activity.from_property.id
