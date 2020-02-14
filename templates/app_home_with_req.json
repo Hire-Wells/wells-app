@@ -40,13 +40,6 @@
       }
     },
     {
-      "type": "section",
-      "text": {
-        "type": "mrkdwn",
-        "text": "By using this app, you acknowledge the following:\n- https://hirewells.com/privacy\n- https://hirewells.com/terms"
-      }
-    },
-    {
       "type": "actions",
       "elements": [
         {
@@ -58,6 +51,15 @@
             "emoji": true
           },
           "url": "https://hirewells.com/"
+        },
+        {
+          "type": "button",
+          "action_id": "button_newReq",
+          "text": {
+            "type": "plain_text",
+            "text": ":briefcase: Open a new req",
+            "emoji": true
+          }
         }
       ]
     }
