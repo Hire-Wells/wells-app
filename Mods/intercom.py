@@ -64,9 +64,10 @@ class Client(object):
         else:
             # Fetch the conversation ID.
             c.execute("SELECT convoId FROM users WHERE userId='"+userId+"';")
-            convoId = c.fetchone()[0]
+            convoId = c.fetchone()
             if(convoId != None):
                 # If the conversation is active.
+                convoId = convoId[0]
                 self.client.conversations.reply(
                     id=convoId, type="user", user_id=userId, message_type="comment", body=message)
             else:
@@ -203,9 +204,10 @@ class Client(object):
                     raise errors.APIError(response)
 
             c.execute("SELECT convoId FROM users WHERE email='" + email + "';")
-            convoId = c.fetchone()[0]
+            convoId = c.fetchone()
             if(convoId != None):
                 # If the conversation is active.
+                convoId = convoId[0]
                 self.client.conversations.reply(
                     id=convoId, type="user", email=email, message_type="comment", body=message, attachment_urls=files)
             else:
