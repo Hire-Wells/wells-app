@@ -62,6 +62,7 @@ class Client(object):
             c.execute('INSERT INTO teams VALUES(?, ?, ?, ?)',
                       (userId, convoId, realName, context))
         else:
+            # User already exists.
             # Fetch the conversation ID.
             c.execute("SELECT convoId FROM teams WHERE userId='"+userId+"';")
             convoId = c.fetchone()
@@ -72,7 +73,6 @@ class Client(object):
                     id=convoId, type="user", user_id=userId, message_type="comment", body=message)
             else:
                 # If the conversation has been archived.
-                # TODO: `user.id` doesn't exist in that scope?
                 newMsg = self.client.messages.create(**{
                     "from": {
                         "type": "user",
@@ -129,7 +129,7 @@ class Client(object):
         # Checking to see if there is already that user in the database.
         c.execute("SELECT * FROM users WHERE userId='" + userId + "';")
         user = None
-        if(len(c.fetchall()) == 0):
+        if(c.fetchall() == None):
             # If the user does not exist
             # Add a new user object to intercom.
             user = self.client.users.create(email=email, name=realName)
