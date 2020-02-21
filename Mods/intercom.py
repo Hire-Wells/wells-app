@@ -215,7 +215,7 @@ class Client(object):
                 newMsg = self.client.messages.create(**{
                     "from": {
                         "type": "user",
-                        "id": user.id
+                        "id": userId
                     },
                     "body": message,
                     "attachment_urls": files
