@@ -129,7 +129,7 @@ class Client(object):
         # Checking to see if there is already that user in the database.
         c.execute("SELECT * FROM users WHERE userId='" + userId + "';")
         user = None
-        if(c.fetchall() == None):
+        if(len(c.fetchall()) == 0):
             # If the user does not exist
             # Add a new user object to intercom.
             user = self.client.users.create(email=email, name=realName)
@@ -151,7 +151,6 @@ class Client(object):
                 email=email, type="user")[0].id
 
             # Add a new user to the database.
-            print("Adding new user")
             c.execute("INSERT INTO users VALUES('" + userId + "','" + channelId + "','" +
                       teamId + "','" + convoId + "','" + realName + "','" + email + "');")
             conn.commit()
