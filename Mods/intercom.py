@@ -154,27 +154,6 @@ class Client(object):
             c.execute("INSERT INTO users VALUES('" + userId + "','" + channelId + "','" +
                       teamId + "','" + convoId + "','" + realName + "','" + email + "');")
             conn.commit()
-            # TODO: Send auto response back to Intercom.
-            # Retrieving message text.
-            with open("templates/auto_responses.json") as h:
-                msg = json.load(h)["on_join_message"]
-            # Creating new request.
-            URL = "https://slack.com/api/chat.postMessage"
-            # Crafting a data object to send to Slack.
-            data = {
-                "token": tokens.getToken(teamId),
-                "channel": channelId,
-                "text": msg
-            }
-            # Making the request.
-            r = requests.post(url=URL, data=data)
-
-            # Checking the status of the response.
-            response = json.loads(r.text)
-            success = response["ok"]
-            if not success:
-                raise errors.APIError(response)
-            return success
         else:
             # If the user already exists.
             # Fetch the conversation ID.
@@ -201,6 +180,9 @@ class Client(object):
                 success = response["ok"]
                 if not success:
                     raise errors.APIError(response)
+                else:
+                    self.gotAdminMessage(
+                        userId, teamId, channelId, realName, email, msg)
 
             c.execute("SELECT convoId FROM users WHERE email='" + email + "';")
             convoId = c.fetchone()
@@ -236,3 +218,85 @@ class Client(object):
                 print(admin.email + " " + str(admin.away_mode_enabled))
                 return True
         return False
+
+    def gotAdminMessage(self, userId, teamId, channelId, realName, email, message):
+        # Catch to see if there is a link being sent.
+        if (message.startswith("<http") and message.endswith(">") and len(message.split()) == 1):
+            # Message is a solo link.
+            message = "Link: " + message[1:-1]
+        # Opening the sqlite3 database.
+        conn = sqlite3.connect("database.db")
+        c = conn.cursor()
+        # Checking to see if there is already that user in the database.
+        c.execute("SELECT * FROM users WHERE userId='" + userId + "';")
+        user = None
+        if(len(c.fetchall()) == 0):
+            # If the user does not exist
+            # Add a new user object to intercom.
+            user = self.client.users.create(email=email, name=realName)
+            # Set the user's source attribute.
+            user.custom_attributes["Source"] = "Slack"
+            self.client.users.save(user)
+            with open("config.json", "r") as h:
+                config = json.load(h)
+                h.close()
+            newMsg = self.client.messages.create(**{
+                "message_type": "inapp",
+                "from": {
+                    "type": "admin",
+                    "id": config["intercom"]["OPERATOR_ID"]
+                },
+                "body": message,
+                "to": {
+                    "type": "user",
+                    "id": user.id
+                }
+            })
+
+            # Fetch the created conversation ID.
+            convoId = self.client.conversations.find_all(
+                email=email, type="user")[0].id
+
+            # Add a new user to the database.
+            c.execute("INSERT INTO users VALUES('" + userId + "','" + channelId + "','" +
+                      teamId + "','" + convoId + "','" + realName + "','" + email + "');")
+            conn.commit()
+        else:
+            # If the user already exists.
+            # Fetch the conversation ID.
+            c.execute("SELECT convoId FROM users WHERE email='" + email + "';")
+            convoId = c.fetchone()
+            with open("config.json", "r") as h:
+                config = json.load(h)
+                h.close()
+            if(convoId != None):
+                # If the conversation is active.
+                convoId = convoId[0]
+
+                self.client.conversations.reply(
+                    id=convoId, type="admin",
+                    admin_id=config["intercom"]["OPERATOR_ID"],
+                    message_type="comment",
+                    body=message)
+            else:
+                # If the conversation has been archived.
+                newMsg = self.client.messages.create(**{
+                    "message_type": "inapp",
+                    "from": {
+                        "type": "admin",
+                        "id": config["intercom"]["OPERATOR_ID"]
+                    },
+                    "body": message,
+                    "to": {
+                        "type": "user",
+                        "id": user.id
+                    }
+                })
+                # Fetch the created conversation ID.
+                convoId = self.client.conversations.find_all(
+                    email=email, type="user")[0].id
+                # Update the database with the new conversation ID.
+                c.execute("UPDATE users SET convoId='" + convoId +
+                          "' WHERE email='" + email + "';")
+        conn.commit()
+        conn.close()

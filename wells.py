@@ -109,6 +109,7 @@ def authWorkspace(**payload):
         url="https://slack.com/api/oauth.access", data=authParams)
     # Getting back the token information.
     tokenData = r.json()
+    print(tokenData)
     teamId = tokenData["team_id"]
     botUserId = tokenData["bot"]["bot_user_id"]
     botAccessToken = tokenData["bot"]["bot_access_token"]
@@ -162,6 +163,55 @@ def appHome(payload):
     """
     slackui.sendHomeScreen(payload)
 
+    # Opening the sqlite3 database.
+    conn = sqlite3.connect("database.db")
+    c = conn.cursor()
+    # Checking to see if there is already that user in the database.
+    userId = payload["event"]["user"]
+    c.execute("SELECT * FROM users WHERE userId='" +
+              userId + "';")
+
+    if(payload["event"]["tab"] == "messages" and c.fetchone() == None):
+
+        teamId = payload["team_id"]
+        channelId = payload["event"]["channel"]
+        with open("templates/auto_responses.json") as h:
+            message = json.load(h)["on_join_message"]
+
+        # Getting name and email from Slack.
+        URL = "https://slack.com/api/users.info"
+        data = {
+            "token": tokens.getToken(teamId),
+            "user": userId
+        }
+        r = requests.get(url=URL, params=data)
+        data = r.json()
+        success = data["ok"]
+        if(not success):
+            raise errors.APIError(data)
+        else:
+            email = data["user"]["profile"]["email"]
+            realName = data["user"]["real_name"]
+            intercomClient.gotAdminMessage(
+                userId, teamId, channelId, realName, email, message)
+
+        # Creating new request.
+        URL = "https://slack.com/api/chat.postMessage"
+        # Crafting a data object to send to Slack.
+        data = {
+            "token": tokens.getToken(payload["team_id"]),
+            "channel": payload["event"]["channel"],
+            "text": message
+        }
+        # Making the request.
+        r = requests.post(url=URL, data=data)
+
+        # Checking the status of the response.
+        response = json.loads(r.text)
+        success = response["ok"]
+        if not success:
+            raise errors.APIError(response)
+
 
 """
 Slack Actions
@@ -170,9 +220,9 @@ Slack Actions
 def onAction():
     # Loads the request information as JSON.
     payload = json.loads(request.form.to_dict()["payload"])
-    if payload["type"] == "block_actions": 
+    if payload["type"] == "block_actions":
         # A button was pressed.
-        actionId=payload["actions"][0]["action_id"]
+        actionId = payload["actions"][0]["action_id"]
         if(actionId == "button_newReq"):
             slackui.sendModal(payload, modalName="new_req_modal")
         # else:
@@ -184,6 +234,7 @@ def onAction():
         print(payload)
     return Response(status=200)
 
+
 """
 Intercom Events
 """
@@ -192,31 +243,31 @@ def onMessageReceive():
     """
     Executes when an intercom message was sent back to the user.
     """
-    data=json.loads(request.data)  # Loads the response JSON.
+    data = json.loads(request.data)  # Loads the response JSON.
     if(data["data"]["item"]["type"] != "conversation"):
         return Response(status=200)
     # Parses the response text and converts it to non-html.
-    h=html2text.HTML2Text()
-    h.ignore_links=True
-    responseText=h.handle(
+    h = html2text.HTML2Text()
+    h.ignore_links = True
+    responseText = h.handle(
         data["data"]["item"]["conversation_parts"]["conversation_parts"][0]["body"])
     # Check to see if User is from Teams or Slack.
-    conn=sqlite3.connect("database.db")
-    c=conn.cursor()
-    userId=data["data"]["item"]["user"]["user_id"]
+    conn = sqlite3.connect("database.db")
+    c = conn.cursor()
+    userId = data["data"]["item"]["user"]["user_id"]
     if userId != None:
         # User is a Teams user.
-        conn=sqlite3.connect("database.db")
-        c=conn.cursor()
+        conn = sqlite3.connect("database.db")
+        c = conn.cursor()
         c.execute('SELECT context FROM teams WHERE userId=?;', (userId,))
-        context_text=c.fetchone()[0]
-        context=pickle.loads(codecs.decode(context_text.encode(), "base64"))
+        context_text = c.fetchone()[0]
+        context = pickle.loads(codecs.decode(context_text.encode(), "base64"))
         LOOP.run_until_complete(BOT.send_message(context, responseText))
     else:
         # User is a slack user.
         # Formatting a message block.
         # Info: https://api.slack.com/reference/block-kit/block-elements
-        message=[
+        message = [
             {
                 "type": "section",
                 "text": {
@@ -227,14 +278,14 @@ def onMessageReceive():
         ]
 
         # Adding links per attachment.
-        attachments=data["data"]["item"]["conversation_parts"]["conversation_parts"][0]["attachments"]
+        attachments = data["data"]["item"]["conversation_parts"]["conversation_parts"][0]["attachments"]
         if(len(attachments) > 0):
             # If there is at least one attachment.
 
-            filesText="_Attachments:_"
+            filesText = "_Attachments:_"
             for file in attachments:
-                fileName=file["name"]
-                fileUrl=file["url"]
+                fileName = file["name"]
+                fileUrl = file["url"]
                 filesText += "\n" + "*<" + fileUrl + "|" + fileName + ">*"
 
             # Adding the divider.
@@ -249,21 +300,21 @@ def onMessageReceive():
                 }
             })
 
-        email=data["data"]["item"]["user"]["email"]
+        email = data["data"]["item"]["user"]["email"]
 
         # Retrieves the channel ID from the database.
-        conn=sqlite3.connect("database.db")
-        c=conn.cursor()
+        conn = sqlite3.connect("database.db")
+        c = conn.cursor()
         c.execute("SELECT channelId, teamId FROM users WHERE email='" + email + "'")
-        user=c.fetchone()
-        channelId=user[0]
-        teamId=user[1]
+        user = c.fetchone()
+        channelId = user[0]
+        teamId = user[1]
 
         # Sends the message to the user.
         # Fetching the auth token.
-        token=tokens.getToken(teamId)
-        slack_client=slack.WebClient(token=token)
-        response=slack_client.chat_postMessage(
+        token = tokens.getToken(teamId)
+        slack_client = slack.WebClient(token=token)
+        response = slack_client.chat_postMessage(
             channel=channelId,
             blocks=message
         )
