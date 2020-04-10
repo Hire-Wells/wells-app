@@ -27,7 +27,7 @@ import pickle
 import codecs
 
 from flask import Flask, request, Response
-from botbuilder.core import BotFrameworkAdapterSettings, TurnContext, BotFrameworkAdapter
+from botbuilder.core import BotFrameworkAdapterSettings, TurnContext, BotFrameworkAdapter, ShowTypingMiddleware
 from botbuilder.schema import Activity, ActivityTypes
 
 # Auth Tokens
@@ -48,6 +48,7 @@ LOOP = asyncio.get_event_loop()
 SETTINGS = BotFrameworkAdapterSettings(
     app.config["APP_ID"], app.config["APP_PASSWORD"])
 ADAPTER = BotFrameworkAdapter(SETTINGS)
+ADAPTER.use(ShowTypingMiddleware(delay=0.5, period=2.0))
 
 # Create the Bot
 BOT = TeamsBot(config["intercom"]["ACCESS_TOKEN"])
