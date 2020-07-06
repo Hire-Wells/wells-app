@@ -29,6 +29,7 @@ import codecs
 from flask import Flask, request, Response
 from botbuilder.core import BotFrameworkAdapterSettings, TurnContext, BotFrameworkAdapter, ShowTypingMiddleware
 from botbuilder.schema import Activity, ActivityTypes
+import uuid
 
 # Auth Tokens
 with open("config.json", "r") as h:
@@ -260,10 +261,17 @@ def onMessageReceive():
         # User is a Teams user.
         conn = sqlite3.connect("database.db")
         c = conn.cursor()
-        c.execute('SELECT context FROM teams WHERE userId=?;', (userId,))
-        context_text = c.fetchone()[0]
-        context = pickle.loads(codecs.decode(context_text.encode(), "base64"))
-        LOOP.run_until_complete(BOT.send_message(context, responseText))
+        c.execute('SELECT reference FROM teams WHERE userId=?;', (userId,))
+        referenceEncoded = c.fetchone()[0]
+        reference = pickle.loads(referenceEncoded)
+        # Send the message to the Teams user.
+        LOOP.run_until_complete(
+            ADAPTER.continue_conversation(
+                reference,
+                lambda turn_context: turn_context.send_activity(responseText),
+                SETTINGS.app_id if SETTINGS.app_id else uuid.uuid4(),
+            )
+        )
     else:
         # User is a slack user.
         # Formatting a message block.

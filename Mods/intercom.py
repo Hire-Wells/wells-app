@@ -13,6 +13,7 @@ import os
 import uuid
 import json
 import Mods.errors as errors
+import copy
 
 
 class Client(object):
@@ -23,69 +24,72 @@ class Client(object):
         """
         self.client = intercomClient(personal_access_token=key)
 
-    def gotTeamsMessage(self, turn_context):
-        """Sends an MS Teams message to Intercom.
+    def gotTeamsMessage(self, activity, reference):
+        """Sends an MS Teams message to intercom.
 
-        Arguments:
-            turn_context {TurnContext} -- MS Teams message metadata.
+        Args:
+            activity {TurnContext.Activity} The message Activity.
+            reference {ConversationReference} The message's conversation reference.
         """
-        # Fetching values
-        userId = turn_context.activity.from_property.id
-        realName = turn_context.activity.from_property.name
-        message = turn_context.activity.text
+
         # Check to see if the user is in the database.
         conn = sqlite3.connect("database.db")
         c = conn.cursor()
-        c.execute("SELECT * FROM teams WHERE userId='"+userId+"';")
+        c.execute("SELECT * FROM teams WHERE userId='" +
+                  activity.from_property.id+"';")
         if(c.fetchone() == None):
             # User does not exist.
             # Add user to Intercom.
-            user = self.client.users.create(user_id=userId, name=realName)
+            user = self.client.users.create(
+                user_id=activity.from_property.id, name=activity.from_property.name)
             # Set user's source attribute.
             user.custom_attributes["Source"] = "Microsoft Teams"
             self.client.users.save(user)
             # Send the message to intercom.
+            # TODO: Handle attachments.
             newMsg = self.client.messages.create(**{
                 "from": {
                     "type": "user",
                     "id": user.id
                 },
-                "body": message
+                "body": activity.text
             })
             # Fetch the conversationID.
             convoId = self.client.conversations.find_all(
-                user_id=userId, type="user")[0].id
-            context = codecs.encode(pickle.dumps(
-                turn_context), "base64").decode()
+                user_id=activity.from_property.id, type="user")[0].id
 
             # Add user into db
+            reference_encoded = pickle.dumps(
+                reference, pickle.HIGHEST_PROTOCOL)
             c.execute('INSERT INTO teams VALUES(?, ?, ?, ?)',
-                      (userId, convoId, realName, context))
+                      (activity.from_property.id, convoId, activity.from_property.name, sqlite3.Binary(reference_encoded)))
         else:
             # User already exists.
             # Fetch the conversation ID.
-            c.execute("SELECT convoId FROM teams WHERE userId='"+userId+"';")
+            c.execute("SELECT convoId FROM teams WHERE userId='" +
+                      activity.from_property.id+"';")
             convoId = c.fetchone()
             if(convoId != None):
                 # If the conversation is active.
                 convoId = convoId[0]
                 self.client.conversations.reply(
-                    id=convoId, type="user", user_id=userId, message_type="comment", body=message)
+                    id=convoId, type="user", user_id=activity.from_property.id, message_type="comment", body=activity.text)
             else:
                 # If the conversation has been archived.
+                # TODO: Handle attachments.
                 newMsg = self.client.messages.create(**{
                     "from": {
                         "type": "user",
-                        "id": userId
+                        "id": activity.from_property.id
                     },
-                    "body": message
+                    "body": activity.text
                 })
                 # Fetch the created conversation ID.
                 convoId = self.client.conversations.find_all(
-                    user_id=userId, type="user")[0].id
+                    user_id=activity.from_property.id, type="user")[0].id
                 # Update the database with the new conversation ID.
                 c.execute("UPDATE teams SET convoId='" + convoId +
-                          "' WHERE userId='" + userId + "';")
+                          "' WHERE userId='" + activity.from_property.id + "';")
         conn.commit()
         conn.close()
 
@@ -99,7 +103,7 @@ class Client(object):
             message {string} -- The message itself.
             files {list} -- A list of attachment URLs.
         """
-
+        # TODO: Convert to payload parameter style.
         files = list()
         # Catch to see if there is a link being sent.
         if (message.startswith("<http") and message.endswith(">") and len(message.split()) == 1):
@@ -118,7 +122,7 @@ class Client(object):
                 # Download the file.
                 extension = os.path.splitext(fileUrl)[1]
                 r = requests.get(fileUrl, headers={
-                                 "Authorization": "Bearer " + token})
+                    "Authorization": "Bearer " + token})
                 fileName = str(uuid.uuid1()) + extension
                 open("static/uploads/" + fileName, "wb").write(r.content)
                 files.append(
@@ -220,6 +224,16 @@ class Client(object):
         return False
 
     def gotAdminMessage(self, userId, teamId, channelId, realName, email, message):
+        """Sends a message (Intercom->User) to Intercom. Mostly used to send automated information.
+
+        Args:
+            userId (string): The user's ID.
+            teamId (string): The user's server ID.
+            channelId (string): The user's channel ID.
+            realName (string): The user's real name.
+            email (string): The user's email.
+            message (string): The message itself.
+        """
         # Catch to see if there is a link being sent.
         if (message.startswith("<http") and message.endswith(">") and len(message.split()) == 1):
             # Message is a solo link.

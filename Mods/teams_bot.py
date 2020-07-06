@@ -3,7 +3,7 @@ Microsoft Teams integration module.
 Carlos Saucedo, 2019
 """
 from botbuilder.core import ActivityHandler, MessageFactory, TurnContext
-from botbuilder.schema import ChannelAccount
+from botbuilder.schema import ChannelAccount, Activity
 import Mods.intercom
 import json
 import pickle
@@ -15,28 +15,27 @@ class TeamsBot(ActivityHandler):
         # Creating intercom client.
         self.intercom = Mods.intercom.Client(intercomToken)
 
-    # TODO: Delete?
-    # async def on_members_added_activity(
-    #     self, members_added: [ChannelAccount], turn_context: TurnContext
-    # ):
-    #     # Sending a welcome message.
-    #     # Reading in the message text.
-    #     with open("templates/auto_responses.json") as h:
-    #         msg = json.load(h)["on_join_message"]
-    #     for member in members_added:
-    #         if member.id != turn_context.activity.recipient.id:
-    #             await turn_context.send_activity(msg)
+    async def on_members_added_activity(
+        self, members_added: [ChannelAccount], turn_context: TurnContext
+    ):
+        # Sending a welcome message.
+        # Reading in the message text.
+        with open("templates/auto_responses.json") as h:
+            msg = json.load(h)["on_join_message"]
+        for member in members_added:
+            if member.id != turn_context.activity.recipient.id:
+                await turn_context.send_activity(msg)
 
     async def on_message_activity(self, turn_context: TurnContext):
-        userId = turn_context.activity.from_property.id
-        realName = turn_context.activity.from_property.name
-        self.intercom.gotTeamsMessage(turn_context)
+        """Runs when a message is sent from Teams to intercom.
 
-    async def send_message(self, turn_context, msg):
-        """Sends a message from Intercom to the Teams DM.
-
-        Arguments:
-            turn_context {TurnContext} -- The context to send the message to.
-            msg {string} -- Message to send.
+        Args:
+            turn_context (TurnContext): The message context.
         """
-        await turn_context.send_activity(msg)
+        # Send help information.
+        if("help" in turn_context.activity.text.lower()):
+            with open("templates/auto_responses.json") as h:
+                msg = json.load(h)["on_help_response"]
+            await turn_context.send_activity(msg)
+        self.intercom.gotTeamsMessage(
+            turn_context.activity, turn_context.get_conversation_reference(turn_context.activity))
