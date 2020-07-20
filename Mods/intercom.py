@@ -66,6 +66,10 @@ class Client(object):
         else:
             # User already exists.
             # Fetch the conversation ID.
+
+            if not self.usersOnline():
+                # TODO: Add away notification in teams.
+                print("No users are online.")
             c.execute("SELECT convoId FROM teams WHERE userId='" +
                       activity.from_property.id+"';")
             convoId = c.fetchone()

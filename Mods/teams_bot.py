@@ -37,5 +37,13 @@ class TeamsBot(ActivityHandler):
             with open("templates/auto_responses.json") as h:
                 msg = json.load(h)["on_help_response"]
             await turn_context.send_activity(msg)
+        elif(not self.intercom.usersOnline()):
+            with open("templates/auto_responses.json") as h:
+                msg = json.load(h)["on_away_response"]
+            await turn_context.send_activity(msg)
+        else:
+            with open("templates/auto_responses.json") as h:
+                msg = json.load(h)["on_teams_response"]
+            await turn_context.send_activity(msg)
         self.intercom.gotTeamsMessage(
             turn_context.activity, turn_context.get_conversation_reference(turn_context.activity))
